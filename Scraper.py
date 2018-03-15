@@ -1,23 +1,46 @@
 import scrapy
 from scrapy.crawler import CrawlerProcess
+from scrapy.linkextractors import LinkExtractor
+from bs4 import BeautifulSoup
+
+import LinkRanker as LR
+# import ImageLoader
+
+query = 'hi'
 
 class Scraper(scrapy.Spider):
     name = "GandeeScraper"
-
     start_urls = [
-        'http://quotes.toscrape.com/page/1/',
-        'http://quotes.toscrape.com/page/2/',
+        'http://www.bing.com/images/search?q=' + query
     ]
 
+    def __init__(self):
+        super(Scraper, self).__init__()
+        self.process = CrawlerProcess()
+        self.url_frontier = []
+        self.visited_urls = []
+        self.link_extractor = LinkExtractor()
+
     def parse(self, response):
-        page = response.url.split("/")[-2]
-        filename = 'quotes-%s.html' % page
-        with open(filename, 'wb') as f:
-            f.write(response.body)
-        self.log('Saved file %s' % filename)
+        soup = BeautifulSoup(response.body)
 
-process = CrawlerProcess()
+        imgs = soup.find_all('img')
+        img_urls = [img['src'] for img in imgs]
 
-process.crawl(Scraper)
+        print(img_urls)
 
-process.start()
+        self.visited_urls.append(response.url)
+
+        links = self.link_extractor.extract_links(response)
+
+        for link in links:
+            print(link.url)
+
+    def startCrawling(self):
+        self.process.crawl(Scraper)
+        self.process.start()
+
+
+s = Scraper()
+
+s.startCrawling()
