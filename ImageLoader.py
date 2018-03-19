@@ -53,6 +53,13 @@ class ImageLoader:
         prep_img = None
         return prep_img
 
+    def retrieveFeedback(self, img):
+        '''
+        ask user for feedback
+        :param img:
+        :return: Keep or not keep image
+        '''
+        pass
 
 class ImageRanker:
 
