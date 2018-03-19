@@ -4,7 +4,6 @@ from scrapy.linkextractors import LinkExtractor
 from bs4 import BeautifulSoup
 
 import LinkRanker as LR
-# import ImageLoader
 
 query = 'hi'
 
@@ -26,6 +25,8 @@ class Scraper(scrapy.Spider):
 
         imgs = soup.find_all('img')
         img_urls = [img['src'] for img in imgs]
+
+        # print(response['responseData']['results'])
 
         print(img_urls)
 
