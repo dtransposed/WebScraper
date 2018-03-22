@@ -35,45 +35,58 @@ class ImageLoader:
 
         imgs_score = 0
         return imgs_score
-
-    def loadImages(self, URL_list):
-        '''
-        :param URL_list:
-        :return imgs: numpy array of images
-        '''
-
-        imgs = np.zeros([1])
-        return imgs
-
-    def preprocessImage(self, img, dim = 224):
+       
+def loadImages(url_list, dim = 224):
     
-        # Load image and get dimensions
-        prep_img = cv2.imread(img)
-        height, width, channels = prep_img.shape
-        print(height, width)
-        
-        # If dimensions are odd, make even
-        if height % 2 == 1:
-            prep_img = prep_img[0:height-1, 0:width]
-        if width % 2 == 1:
-            prep_img = prep_img[0:height, 0:width-1]
+    dim_tuple = (dim, dim, 3, 1)
+    numpy_array = np.zeros(dim_tuple).astype(int)
+    extension = 'jpg'
+    i = 0
+    for url in url_list:
+        i =+ 1
+        file_name = (uuid.uuid4().hex) + str(i) + "." + extension 
+        ur.urlretrieve(url, file_name)
+        #image = ur.urlretrieve(url, file_name) # we need a proper downloader
+        image = preprocessImage(file_name, dim) # Preprocessing (currently cropping), image is a file
+        image = np.expand_dims(image, 3)
+        if numpy_array[0][0][0][0] == 0:    
+            numpy_array = np.add(numpy_array, image)
+        else:
+            numpy_array = np.concatenate((numpy_array, image), axis = 3)
             
-        # Crop to square
-        if height > width:
-            crop_stripe = int((height-width)/2)
-            prep_img = prep_img[crop_stripe:height-crop_stripe, 0:width]
-            prep_img = cv2.resize(prep_img, (dim,dim), interpolation = cv2.INTER_AREA)
-        if height < width:
-            crop_stripe = int((width-height)/2)
-            prep_img = prep_img[0:height, crop_stripe:width-crop_stripe]
-            prep_img = cv2.resize(prep_img, (dim,dim), interpolation = cv2.INTER_AREA)
-        if height == width:
-            prep_img = cv2.resize(prep_img, (dim,dim), interpolation = cv2.INTER_AREA)
-        name = str(img)
-        cv2.imwrite(name, prep_img)
-         
-        return prep_img
+    return numpy_array  
 
+##############################################################################
+        
+def preprocessImage(img, dim = 224):
+
+    # Load image and get dimensions
+    prep_img = cv2.imread(img)
+    height, width, channels = prep_img.shape
+    print(height, width)
+    
+    # If dimensions are odd, make even
+    if height % 2 == 1:
+        prep_img = prep_img[0:height-1, 0:width]
+    if width % 2 == 1:
+        prep_img = prep_img[0:height, 0:width-1]
+        
+    # Crop to square
+    if height > width:
+        crop_stripe = int((height-width)/2)
+        prep_img = prep_img[crop_stripe:height-crop_stripe, 0:width]
+        prep_img = cv2.resize(prep_img, (dim,dim), interpolation = cv2.INTER_AREA)
+    if height < width:
+        crop_stripe = int((width-height)/2)
+        prep_img = prep_img[0:height, crop_stripe:width-crop_stripe]
+        prep_img = cv2.resize(prep_img, (dim,dim), interpolation = cv2.INTER_AREA)
+    if height == width:
+        prep_img = cv2.resize(prep_img, (dim,dim), interpolation = cv2.INTER_AREA)
+    name = str(img)
+    cv2.imwrite(name, prep_img)
+     
+    return prep_img
+##############################################################################
 
 class ImageRanker:
 
