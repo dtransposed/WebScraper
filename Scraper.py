@@ -1,14 +1,18 @@
 import scrapy
 from scrapy.crawler import CrawlerProcess
-from scrapy.linkextractors import LinkExtractor
 from bs4 import BeautifulSoup
-from selenium import webdriver
-import time
-import pickle
+import requests
+import json
 
 import ImageLoader as IL
 
+############# Insert Query Here: spaces should be + signs (i guess) ############
 query = 'car'
+################################################################################
+'''
+Known Error: For some URLs I'm running into errors dues to japanese, chinese sign... gotta fix that
+                error occured for 'car+red'
+'''
 
 class Scraper(scrapy.Spider):
     name = "GandeeScraper"
@@ -16,100 +20,70 @@ class Scraper(scrapy.Spider):
         "https://www.google.com/search?q=%s&source=lnms&tbm=isch" % query
     ]
 
-    def __init__(self):
+    def __init__(self, query=''):
+        # To-Do´: parse query as argument to constructor
         super(Scraper, self).__init__()
-        self.process = CrawlerProcess()
+        self.process = CrawlerProcess()     # for running as a process
         self.url_frontier = []
-        self.visited_urls = []
-        self.link_extractor = LinkExtractor()
-        self.image_loader = IL.ImageLoader()
+        self.url_history = []
+        self.img_urls_history = []
+        self.image_loader = IL.ImageLoader()    # Image loader object which holds the functionality of downloading a classification
+        # header object, necessary to get proper response when requesting urls
+        self.header = {
+            'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.11 (KHTML, like Gecko) Chrome/23.0.1271.64 Safari/537.11',
+            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+            'Referer': 'https://cssspritegenerator.com',
+            'Accept-Charset': 'ISO-8859-1,utf-8;q=0.7,*;q=0.3',
+            'Accept-Encoding': 'none',
+            'Accept-Language': 'en-US,en;q=0.8',
+            'Connection': 'keep-alive'}
 
     def parse(self, response):
-
-        driver = webdriver.Firefox()
-        # driver = webdriver.PhantomJS('phantomjs')
-        driver.get(response.url)
-        all_urls = []
+        img_urls = []
         try:
-            for i in range(0, 5):
-                driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
-                time.sleep(1.5)
-                # imgs_container = driver.find_element_by_id('search')
-                # imgs = imgs_container.find_elements_by_tag_name('img')
-                # driver.save_screenshot('out'+str(i)+'.png')
-            # html = driver.page_source
-            # soup = BeautifulSoup(html)
-            # pret = soup.prettify()
-            driver.find_element_by_id('smb').click()
-            for i in range(0, 4):
-                time.sleep(1.5)
-                driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
-        except:
-            pass
+            # getting google search and parsing HTML to BeautifulSoup
+            response = requests.get(response.url, headers=self.header)
+            soup = BeautifulSoup(response.content)
 
-        further_searches = []
-        imgs_container = driver.find_element_by_id('search')
-        imgs = imgs_container.find_elements_by_tag_name('img')
-        for img in imgs:
+            # Extracting all image URLs
+            original_tag_list = soup.findAll("div", {"class": "rg_meta notranslate"})
+            img_urls = [json.loads(tag.text)['ou'] for tag in original_tag_list]
+
+        except Exception as e:
+            print(e)
+
+        ############### CALLING IMAGE RANKER ###############################
+        self.image_loader.rankImages(img_urls)
+        ####################################################################
+
+        # Appending current Image URLs to history
+        self.img_urls_history = self.img_urls_history + img_urls
+        if len(img_urls) > 0:
             try:
-                img.click()
-                time.sleep(0.5)
-                similar_imgs_container = driver.find_element_by_id('irc_bg')
-                sim_imgs = similar_imgs_container.find_elements_by_tag_name('img')
-                img_url_list = []
-            except:
-                pass
-            for im in sim_imgs:
-                try:
-                    new_search_url = ''
-                    average_size = (im.size['height'] + im.size['width']) / 2
-                    if average_size > 50 and average_size < 200:
-                        parent = im.find_element_by_xpath('..')
-                        pt = parent.tag_name
-                        phref = parent.get_attribute('href')
-                        if parent.tag_name == 'a' and parent.get_attribute('href').startswith('https://www.google.de/imgres?'):
-                            time.sleep(0.1)
-                            im.click()
-                            current_img = imgs_container.find_element_by_xpath('//*[@id="irc_cc"]/div[2]/div[1]/div[2]/div[2]/a/img')
-                            img_url_list.append(current_img.get_attribute('src'))
-                            pickle.dump(all_urls, open('url_list.p', 'wb'))
-                        elif parent.tag_name == 'a' and parent.get_attribute('href').startswith('https://www.google.de/search?'):
-                            new_search_url = parent.get_attribute('href')
-                except:
-                    pass
 
-            self.image_loader.rankImages(img_url_list)
-            all_urls = all_urls + img_url_list
-            if new_search_url != '': further_searches.append(new_search_url)
-            print(len(all_urls))
-            # if len(all_urls) >= 1000:
-            #     pickle.dump(all_urls, open('url_list.p','wb'))
-            #     break
+                # To-Do: run similar image URL extraction as subprocess since it is very slow
+                # extracting similar image URL via image search with first image url
+                self.url_frontier = self.url_frontier + img_urls.copy()
+                img_url = self.url_frontier.pop(0)
+                current_response = requests.get('https://www.google.com/searchbyimage?image_url=' +
+                                                     img_url, headers=self.header)
+                current_soup = BeautifulSoup(current_response.content)
+                link_to_visual_neighbours = 'https://www.google.com' + current_soup.find('a', {"class": "iu-card-header"})['href']
 
-        # soup = BeautifulSoup(driver.page_source)
-        # return soup
-
-        # print(soup.prettify())
-        #
-        # imgs = soup.find_all('img')
-        # img_urls = [img['src'] for img in imgs]
-        #
-        # print(len(img_urls))
-        #
-        # self.visited_urls.append(response.url)
-        #
-        # links = self.link_extractor.extract_links(response)
-        #
-        # # for link in links:
-        # #     print(link.url)
+                # recursively calling self.parse again to scrape the first similar image search result
+                yield scrapy.Request(link_to_visual_neighbours, self.parse)
+            except Exception as e:
+                print(e)
+        else:
+            return None
 
     def startCrawling(self):
         self.process.crawl(Scraper)
         self.process.start()
 
-    def scrapeSearchEngine(self, URL):
-        if 'google' in URL: soup = SSET.getGoogleFullHTML(URL)
-        return soup
+    def sortURLFrontier(self):
+        pass
+
 
 s = Scraper()
 
