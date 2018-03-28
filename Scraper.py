@@ -6,24 +6,28 @@ import json
 
 import ImageLoader as IL
 
-############# Insert Query Here: spaces should be + signs (i guess) ############
-query = 'car'
-################################################################################
 '''
 Known Error: For some URLs I'm running into errors dues to japanese, chinese sign... gotta fix that
                 error occured for 'car+red'
 '''
 
-class Scraper(scrapy.Spider):
+class GoogleScraper(scrapy.Spider):
     name = "GandeeScraper"
-    start_urls = [
-        "https://www.google.com/search?q=%s&source=lnms&tbm=isch" % query
-    ]
 
-    def __init__(self, query=''):
-        # To-Do´: parse query as argument to constructor
-        super(Scraper, self).__init__()
-        self.process = CrawlerProcess()     # for running as a process
+    # def start_requests(self):
+    #     s
+
+    def __init__(self, **kwargs):
+
+        self.query = kwargs['query'] if 'query' in kwargs else ''
+
+        self.start_urls = [
+                "https://www.google.com/search?q=%s&source=lnms&tbm=isch" % self.query
+        ]
+
+        self.process = CrawlerProcess() # initializing crawler process to run scrapy from script
+
+        super(GoogleScraper, self).__init__(name=self.name)
         self.url_frontier = []
         self.url_history = []
         self.img_urls_history = []
@@ -78,13 +82,8 @@ class Scraper(scrapy.Spider):
             return None
 
     def startCrawling(self):
-        self.process.crawl(Scraper)
+        self.process.crawl(GoogleScraper, query=self.query)
         self.process.start()
 
     def sortURLFrontier(self):
         pass
-
-
-s = Scraper()
-
-s.startCrawling()
