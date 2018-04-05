@@ -1,16 +1,22 @@
 import Scraper
-
-
-# query = 'car'
-#
-# spider = Scraper.GoogleScraper(query=query)
-# spider.startCrawling()
+import ImageLoader as il
+import ImageRankerNN as ir
+import numpy as np
 
 query = 'car'
+dim = 224
 
-scraper = Scraper.GoogleScraper(query)
+start_url = "https://www.google.com/search?q=%s&source=lnms&tbm=isch" % query
+scraper = Scraper.GoogleScraper(224, start_url)
 
-imgs_generator = scraper.start()
+image_loader = il.ImageLoader(dim=dim)
+# image_ranker = ir.Ranker_NN(1, 1000, 500)
+# our_model = image_ranker.convolutional_neural_network()
 
-for im in imgs_generator:
-    print(im)
+i = 1
+while i < 4:
+    img_urls = scraper.parseNextURL()
+    imgs, urls = image_loader.loadImages(img_urls)
+    number_correct, number_all, target_array = image_loader.sort_images(imgs)
+    scraper.appendURLFrontier(urls, target_array)
+    i += 1
