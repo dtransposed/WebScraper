@@ -56,35 +56,25 @@ class ImageLoader:
         dim_tuple = (dim, dim, 3, 1)
         numpy_array = np.zeros(dim_tuple).astype(int)
         ii = 0
-        for url in url_list:
+        url_list_copy = url_list.copy()
+        for url in url_list_copy:
             ii += 1
             print("Numpy array size: ", numpy_array.shape)
             try:
                 resp = ur.urlopen(url)
-                print("Level 1")
                 image = np.asarray(bytearray(resp.read()), dtype="uint8")
-                print("Level 2")
                 image = cv2.imdecode(image, cv2.IMREAD_COLOR)
-                print("Level 3")
                 # image = ur.urlretrieve(url, file_name) # we need a proper downloader
                 image = self.preprocessImage(image)  # Preprocessing (currently cropping), image is a file
-                print("Level 4")
                 image = np.expand_dims(image, 3)
                 # if numpy_array[0][0][0][0] == 0:
                 if ii == 1:
                     numpy_array = np.add(numpy_array, image)
-                    print("Level 5")
                 else:
                     numpy_array = np.concatenate((numpy_array, image), axis=3)
-                    print("Level 6")
                 print("Downloaded %s" % (url))
             except Exception as e:
-                print(e)
-                print("incorrect %s" % (url))
-                print(url)
-                print(url_list)
                 url_list.remove(url)
-                print(url_list)
         numpy_array = np.rollaxis(numpy_array, 3)
         return numpy_array.astype("uint8"), url_list
 

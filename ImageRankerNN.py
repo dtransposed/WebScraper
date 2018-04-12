@@ -1,5 +1,6 @@
 import tensorflow as tf
 import numpy as np
+from keras import optimizers
 from keras import applications
 from keras.preprocessing import image
 from keras.layers import Dropout, Flatten, Dense
@@ -18,22 +19,24 @@ class Ranker_NN():
             self.n_classes=n_classes     
             self.fc1=n_fully_connected_1 
             self.fc2=n_fully_connected_2
-            self.resnet=applications.resnet50.ResNet50(include_top=False, weights='imagenet',input_shape=(224,224,3))
+            self.resnet = applications.resnet50.ResNet50(include_top=False, weights='imagenet',input_shape=(224,224,3))
             for layer in self.resnet.layers:
                 layer.trainable = False
+            self.model_final = self.convolutional_neural_network()
+            self.model_final.compile(optimizer=optimizers.Adam(lr=0.0001), loss='binary_crossentropy', metrics=['accuracy'])
         '''
         convolutional_neural_network method creates our custom CNN. 
         CNN is composed out of freezed ResNet layers and additional custom-made
         fully connected layers. It returns an object 'model_final', which is our CNN model.
         '''
         def convolutional_neural_network(self):
-            x=self.resnet.output
-            x=Flatten()(x)
-            x=Dense(self.fc1, activation="relu")(x)
-            x=Dropout(0.5)(x)
-            x=Dense(self.fc2, activation="relu")(x)
-            output=Dense(self.n_classes,activation='sigmoid')(x)
-            self.model_final=Model(input=self.resnet.input,output=output)
+            x = self.resnet.output
+            x = Flatten()(x)
+            x = Dense(self.fc1, activation="relu")(x)
+            # x=Dropout(0.5)(x)
+            # x=Dense(self.fc2, activation="relu")(x)
+            output = Dense(self.n_classes,activation='sigmoid')(x)
+            self.model_final = Model(input=self.resnet.input, output=output)
             return self.model_final
             '''
             make_prediction method allows us to perform pass through the CNN.
@@ -44,21 +47,20 @@ class Ranker_NN():
             '''
         def make_prediction(self, img_array):
             # list_of_raw_files=os.listdir(raw_image_source)
-            prediction_list=np.array([[0,0]])
+            prediction_list=np.array([[0]])
             for img in img_array:
                 # img=image.load_img(img_path,target_size=(224,224))
                 # x=image.img_to_array(img)
                 x=np.expand_dims(img,axis=0)
-                x_image=applications.resnet50.preprocess_input(x) 
-                prediction=self.model_final.predict(x_image)
-                prediction=np.array(prediction)
+                x_image = applications.resnet50.preprocess_input(x)
+                prediction = self.model_final.predict(x_image)
+                prediction  =np.array(prediction)
                 print(prediction)
-                prediction_list=np.concatenate((prediction_list, prediction), axis=0)
+                prediction_list = np.concatenate((prediction_list, prediction), axis=0)
             prediction_list = np.delete(prediction_list, (0), axis=0)
             return prediction_list
 
         def train_model(self, data, true_labels, batch_size, no_epochs):
-            self.model_final.compile(optimizer='adam', loss='binary_crossentropy',metrics=['accuracy'])
             self.history = self.model_final.fit(data, true_labels, epochs=no_epochs, batch_size=batch_size)
             
         def evaluation_plot(self):

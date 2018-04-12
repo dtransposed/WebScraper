@@ -55,7 +55,7 @@ class GoogleScraper:
         try:
             # getting google search and parsing HTML to BeautifulSoup
             response = requests.get(URL, headers=self.header)
-            soup = BeautifulSoup(response.content)
+            soup = BeautifulSoup(response.content, 'html.parser')
 
             # Extracting all image URLs
             original_tag_list = soup.findAll("div", {"class": "rg_meta notranslate"})
@@ -68,7 +68,7 @@ class GoogleScraper:
     def constructQuery(self, img_url):
         current_response = requests.get('https://www.google.com/searchbyimage?image_url=' +
                                         img_url, headers=self.header)
-        current_soup = BeautifulSoup(current_response.content)
+        current_soup = BeautifulSoup(current_response.content, 'html.parser')
         link_to_visual_neighbours = 'https://www.google.com' + \
                                     current_soup.find('a', {"class": "iu-card-header"})['href']
         return link_to_visual_neighbours
