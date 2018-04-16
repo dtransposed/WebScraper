@@ -3,7 +3,7 @@ import ImageLoader as il
 import ImageRankerNN as ir
 import numpy as np
 
-query = 'sign language ok'
+query = 'sonniges wetter'
 dim = 224
 
 start_url = "https://www.google.com/search?q=%s&source=lnms&tbm=isch" % query

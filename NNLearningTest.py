@@ -6,9 +6,7 @@ import pickle as p
 
 folder_clean = 'clean_pics'
 folder_garbage = 'garbage_pics'
-
 image_ranker = ir.Ranker_NN(1, 1000, 500)
-
 files_clean = glob.glob('clean_pics/*.jpg')
 files_garbage = glob.glob('garbage_pics/*.jpg')
 

@@ -62,8 +62,7 @@ class ImageLoader:
             print("Numpy array size: ", numpy_array.shape)
             try:
                 resp = ur.urlopen(url)
-                image = np.asarray(bytearray(resp.read()), dtype="uint8")
-                image = cv2.imdecode(image, cv2.IMREAD_COLOR)
+                image = np.asarray(bytearray(resp.read()), dtype="uint8")                image = cv2.imdecode(image, cv2.IMREAD_COLOR)
                 # image = ur.urlretrieve(url, file_name) # we need a proper downloader
                 image = self.preprocessImage(image)  # Preprocessing (currently cropping), image is a file
                 image = np.expand_dims(image, 3)
@@ -132,7 +131,7 @@ class ImageLoader:
             # sorting into folders
             while not endProgram:
                 ############ CORRECT: PRESS "A"  ####################
-                if cv2.waitKey(33) == ord('a'):
+                if cv2.waitKey(0) == ord('a'):
                     print("Moved to Class a")
                     cv2.destroyAllWindows()
                     new_path = "clean_pics/" + str(file_name)
@@ -144,7 +143,8 @@ class ImageLoader:
                     endProgram = True
 
                 ############ INCORRECT: PRESS "B"  ####################
-                if cv2.waitKey(33) == ord('b'):
+                # if cv2.waitKey(33) == ord('b'):
+                else:
                     print("Moved to Class b")
                     cv2.destroyAllWindows()
                     new_path = "garbage_pics/" + str(file_name)
